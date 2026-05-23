@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Construction Cost Estimator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="6" fill="#e87722"/>
+          <path d="M6 24L16 8L26 24H6Z" fill="white" opacity="0.9"/>
+          <rect x="13" y="18" width="6" height="6" fill="#e87722"/>
+        </svg>
+        <span>Build Estimator</span>
+      </div>
+      <p class="tagline">Instant material cost breakdowns with live market pricing</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="layout">
+
+      <!-- Left: Config Panel -->
+      <aside class="config-panel">
+        <h2>Project Details</h2>
+        <form id="estimateForm">
+
+          <div class="field-group">
+            <label for="projectType">Project Type</label>
+            <select id="projectType" name="projectType" required>
+              <option value="">— Select a project —</option>
+              <option value="deck">Wood Deck</option>
+              <option value="fence">Wood Fence</option>
+              <option value="shedFraming">Shed Framing</option>
+            </select>
+          </div>
+
+          <!-- Deck fields -->
+          <div id="fields-deck" class="dynamic-fields hidden">
+            <div class="field-row">
+              <div class="field-group">
+                <label for="deck-length">Length (ft)</label>
+                <input type="number" id="deck-length" min="1" max="500" placeholder="16" />
+              </div>
+              <div class="field-group">
+                <label for="deck-width">Width (ft)</label>
+                <input type="number" id="deck-width" min="1" max="500" placeholder="12" />
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="deck-material">Decking Material</label>
+              <select id="deck-material">
+                <option value="pressure-treated">Pressure Treated</option>
+                <option value="cedar">Cedar</option>
+                <option value="composite">Composite</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Fence fields -->
+          <div id="fields-fence" class="dynamic-fields hidden">
+            <div class="field-row">
+              <div class="field-group">
+                <label for="fence-length">Length (ft)</label>
+                <input type="number" id="fence-length" min="1" max="500" placeholder="100" />
+              </div>
+              <div class="field-group">
+                <label for="fence-height">Height (ft)</label>
+                <input type="number" id="fence-height" min="1" max="12" placeholder="6" />
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="fence-style">Fence Style</label>
+              <select id="fence-style">
+                <option value="privacy">Privacy (tight pickets)</option>
+                <option value="picket">Picket (open spacing)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Shed fields -->
+          <div id="fields-shedFraming" class="dynamic-fields hidden">
+            <div class="field-row">
+              <div class="field-group">
+                <label for="shed-length">Length (ft)</label>
+                <input type="number" id="shed-length" min="1" max="500" placeholder="12" />
+              </div>
+              <div class="field-group">
+                <label for="shed-width">Width (ft)</label>
+                <input type="number" id="shed-width" min="1" max="500" placeholder="10" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label for="shed-height">Wall Height (ft)</label>
+                <input type="number" id="shed-height" min="1" max="20" placeholder="8" />
+              </div>
+              <div class="field-group">
+                <label for="shed-pitch">Roof Pitch</label>
+                <select id="shed-pitch">
+                  <option value="4:12">4:12</option>
+                  <option value="6:12">6:12</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" id="calcBtn" disabled>
+            <span class="btn-text">Calculate Estimate</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+
+        </form>
+
+        <div class="price-note">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm.75 10.5h-1.5v-4.5h1.5v4.5zm0-6h-1.5v-1.5h1.5v1.5z"/></svg>
+          Prices sourced live from Bing Shopping. A 10% contingency is added to the total.
+        </div>
+      </aside>
+
+      <!-- Right: Results Panel -->
+      <section class="results-panel">
+        <div id="placeholder" class="placeholder">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <rect x="8" y="40" width="48" height="4" rx="2" fill="#e87722" opacity="0.3"/>
+            <rect x="14" y="20" width="36" height="20" rx="2" fill="#e87722" opacity="0.15"/>
+            <rect x="22" y="8" width="20" height="14" rx="2" fill="#e87722" opacity="0.3"/>
+            <rect x="26" y="44" width="4" height="8" rx="1" fill="#e87722" opacity="0.4"/>
+            <rect x="34" y="44" width="4" height="8" rx="1" fill="#e87722" opacity="0.4"/>
+          </svg>
+          <p>Select a project type and enter dimensions to get a material cost estimate.</p>
+        </div>
+
+        <div id="results" class="hidden">
+          <div class="results-header">
+            <div>
+              <h2 id="results-title"></h2>
+              <p id="results-subtitle" class="results-sub"></p>
+            </div>
+            <button id="recalcBtn" class="recalc-btn" title="Recalculate with fresh prices">
+              ↺ Refresh Prices
+            </button>
+          </div>
+
+          <div class="table-wrapper">
+            <table id="materialsTable">
+              <thead>
+                <tr>
+                  <th>Material</th>
+                  <th class="num">Qty</th>
+                  <th>Unit</th>
+                  <th class="num">Unit Price</th>
+                  <th class="num">Total</th>
+                  <th>Source</th>
+                </tr>
+              </thead>
+              <tbody id="materialsBody"></tbody>
+              <tfoot id="materialsFoot"></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div id="error-msg" class="error-msg hidden"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <p>Looking up live market prices…</p>
+      <p class="loading-sub">This takes ~10–20 seconds</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
