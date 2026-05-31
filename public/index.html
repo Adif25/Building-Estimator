@@ -201,21 +201,19 @@
     <div class="stage-dots" id="stageDots"></div>
   </section>
 
-  <!-- AI Prompt Modal -->
-  <div class="modal-overlay hidden" id="promptModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>AI Animation Prompt</h3>
-        <button class="modal-close" id="modalClose">✕</button>
-      </div>
-      <p class="modal-sub">Paste into <strong>Google Flow</strong> (Frames to Video) to generate a construction timelapse.</p>
-      <div class="prompt-box" id="promptText"></div>
-      <div class="modal-actions">
-        <button class="copy-btn" id="copyPromptBtn">Copy Prompt</button>
-        <a href="https://flow.google.com" target="_blank" rel="noopener" class="open-flow-btn">Open Google Flow ↗</a>
-      </div>
+  <!-- AI Tool Panel (inline, no modal) -->
+  <div class="tool-panel hidden" id="toolPanel">
+    <p class="tool-panel-label">Prompt copied — open your AI video tool and paste it:</p>
+    <div class="tool-buttons" id="toolButtons">
+      <button class="tool-btn" data-url="https://app.klingai.com/text-to-video/new" style="--tc:#7c3aed">Kling AI</button>
+      <button class="tool-btn" data-url="https://app.runwayml.com/creation/text-to-video" style="--tc:#0ea5e9">Runway ML</button>
+      <button class="tool-btn" data-url="https://pika.art/create" style="--tc:#f43f5e">Pika</button>
+      <button class="tool-btn" data-url="https://lumalabs.ai/dream-machine" style="--tc:#10b981">Luma AI</button>
     </div>
   </div>
+
+  <!-- Toast -->
+  <div class="tool-toast hidden" id="toolToast">✓ Prompt copied to clipboard — paste it in the tool!</div>
 
   <script src="app.js"></script>
 </body>

@@ -175,28 +175,30 @@ function hideError() {
 
 // ── Visual Build Stages ────────────────────────────────────────────────────
 
+const UNS = (id) => `https://images.unsplash.com/photo-${id}?w=900&h=480&fit=crop&auto=format`;
+
 const PROJECT_VISUALS = {
   deck: {
     title: 'Wood Deck — Build Stages',
     stages: [
       {
         label: '① Site Prep & Post Holes',
-        img: 'https://source.unsplash.com/900x480/?construction+post+hole+digging+wood',
+        img: UNS('1562957982-b1f25317aebd'),
         desc: 'Mark the deck layout with stakes and string. Dig post holes at least 12″ below the frost line, then set concrete footings and let cure 24–48 hrs.'
       },
       {
         label: '② Beam & Joist Framing',
-        img: 'https://source.unsplash.com/900x480/?wood+joist+beam+frame+construction+lumber',
+        img: UNS('1682148144991-8f7b79406400'),
         desc: 'Attach the ledger board to the house, set posts, run the main beam, then hang joists 16″ on center using metal joist hangers.'
       },
       {
         label: '③ Laying Deck Boards',
-        img: 'https://source.unsplash.com/900x480/?deck+boards+installation+wood+fastening',
+        img: UNS('po87W-TLLfc'),
         desc: 'Fasten deck boards perpendicular to the joists with 1/8″ spacing for drainage. Work outward from the house, maintain consistent gaps.'
       },
       {
         label: '④ Finished Deck',
-        img: 'https://source.unsplash.com/900x480/?finished+wood+deck+backyard+outdoor',
+        img: UNS('o8C5SxNCGaw'),
         desc: 'Sand cut edges, apply sealant or stain, then install railing if the deck is over 30″ above grade (required by most building codes).'
       }
     ]
@@ -206,22 +208,22 @@ const PROJECT_VISUALS = {
     stages: [
       {
         label: '① Layout & Post Hole Spacing',
-        img: 'https://source.unsplash.com/900x480/?fence+post+hole+digging+backyard',
+        img: UNS('1593285247650-cd7bb44adcfd'),
         desc: 'Mark post spacing (6–8 ft typical) along a string line for alignment. Dig holes 1/3 the post length deep for solid footing.'
       },
       {
         label: '② Setting Posts in Concrete',
-        img: 'https://source.unsplash.com/900x480/?fence+post+concrete+setting+plumb',
+        img: UNS('1601042860368-debed90085e0'),
         desc: 'Place posts plumb, pack with fast-setting concrete, brace each post and let cure at least 24 hrs before hanging rails or boards.'
       },
       {
         label: '③ Attaching Rails',
-        img: 'https://source.unsplash.com/900x480/?fence+rail+installation+horizontal+wood',
+        img: UNS('1604015641586-6fa03629f976'),
         desc: 'Attach top and bottom 2×4 rails to posts. Add a middle rail for fences over 5 ft. Rails can be notched into posts or face-mounted with hardware.'
       },
       {
         label: '④ Finished Fence',
-        img: 'https://source.unsplash.com/900x480/?finished+wood+privacy+fence+backyard',
+        img: UNS('1537407034356-b8f5f1ac2aa8'),
         desc: 'Fasten pickets or boards evenly to the rails. Cut tops to a consistent height. Apply exterior stain or paint for weather protection and longevity.'
       }
     ]
@@ -231,22 +233,22 @@ const PROJECT_VISUALS = {
     stages: [
       {
         label: '① Floor Frame & Skids',
-        img: 'https://source.unsplash.com/900x480/?shed+floor+frame+pressure+treated+lumber',
+        img: UNS('1634255970497-78ffb2b08ae8'),
         desc: 'Set pressure-treated 4×6 skids on a level gravel base. Build a floor frame with 2×6 joists 16″ on center, then sheathe with ¾″ plywood.'
       },
       {
         label: '② Wall Framing',
-        img: 'https://source.unsplash.com/900x480/?wall+frame+stud+construction+raising',
+        img: UNS('1563874093519-ca5eda5cd776'),
         desc: 'Frame each wall flat on the floor — top plate, bottom plate, studs 16″ OC. Tilt up and temporarily brace each wall section before moving to the next.'
       },
       {
         label: '③ Roof Framing',
-        img: 'https://source.unsplash.com/900x480/?roof+rafter+framing+ridge+board+construction',
+        img: UNS('1661944781655-10bafd0bda0b'),
         desc: 'Cut common rafters to match your pitch, install the ridge board at the peak, then add collar ties for lateral strength against wind and snow loads.'
       },
       {
         label: '④ Finished Shed',
-        img: 'https://source.unsplash.com/900x480/?finished+wooden+shed+backyard+garden',
+        img: UNS('1704742950992-9815a104820c'),
         desc: 'Sheathe walls and roof with OSB or plywood, add house wrap, install doors and windows, then finish with siding and roofing material of your choice.'
       }
     ]
@@ -262,10 +264,6 @@ const stageDotsEl = document.getElementById('stageDots');
 const slidePrevBtn = document.getElementById('slidePrev');
 const slideNextBtn = document.getElementById('slideNext');
 const aiPromptBtn = document.getElementById('aiPromptBtn');
-const promptModal = document.getElementById('promptModal');
-const promptTextEl = document.getElementById('promptText');
-const copyPromptBtn = document.getElementById('copyPromptBtn');
-const modalCloseBtn = document.getElementById('modalClose');
 
 let currentStage = 0;
 let slideInterval = null;
@@ -323,14 +321,19 @@ function updateVisuals(type) {
 slidePrevBtn.addEventListener('click', () => { showStage(currentStage - 1); resetAutoplay(); });
 slideNextBtn.addEventListener('click', () => { showStage(currentStage + 1); resetAutoplay(); });
 
+const AI_TOOLS = [
+  { name: 'Kling AI', url: 'https://app.klingai.com/text-to-video/new', color: '#7c3aed' },
+  { name: 'Runway', url: 'https://app.runwayml.com/creation/text-to-video', color: '#0ea5e9' },
+  { name: 'Pika', url: 'https://pika.art/create', color: '#f43f5e' },
+  { name: 'Luma AI', url: 'https://lumalabs.ai/dream-machine', color: '#10b981' },
+];
+
 function buildAiPrompt() {
   const type = currentVisualType;
   const visuals = PROJECT_VISUALS[type];
   if (!visuals) return '';
-
   const label = PROJECT_LABELS[type] || type;
   const stages = visuals.stages.map((s) => s.label.replace(/^[①-④]\s*/, '')).join(' → ');
-
   let dimStr = '';
   if (type === 'deck') {
     const l = document.getElementById('deck-length').value;
@@ -345,26 +348,21 @@ function buildAiPrompt() {
     const w = document.getElementById('shed-width').value;
     if (l && w) dimStr = `${l}ft × ${w}ft `;
   }
-
-  return `Create a fast-paced construction timelapse video showing a ${dimStr}${label} being built gradually from the first frame (empty backyard/site) to the final frame (fully completed ${label.toLowerCase()}).
-
-The video should look photorealistic and dynamic, with construction workers, hand tools, power tools, and building materials appearing and moving rapidly as if in a timelapse. Show all construction stages in order: ${stages}.
-
-Keep the camera locked in a single wide-angle shot (16–20mm). Movements should be extremely fast and smooth, like a real timelapse recorded over several days but condensed into 10–15 seconds. Maintain consistent daylight, environment, and realism throughout. The final frame should show the finished ${label.toLowerCase()} in a clean, modern backyard setting.`;
+  return `Create a fast-paced construction timelapse video showing a ${dimStr}${label} being built gradually from the first frame (empty backyard/site) to the final frame (fully completed ${label.toLowerCase()}). Show construction workers, tools, and materials moving rapidly. Stages in order: ${stages}. Wide-angle locked camera, photorealistic, consistent daylight. Final frame: finished ${label.toLowerCase()} in a clean modern backyard.`;
 }
 
+const toolPanel = document.getElementById('toolPanel');
+const toolToast = document.getElementById('toolToast');
+
 aiPromptBtn.addEventListener('click', () => {
-  promptTextEl.textContent = buildAiPrompt();
-  promptModal.classList.remove('hidden');
-  copyPromptBtn.textContent = 'Copy Prompt';
+  const prompt = buildAiPrompt();
+  navigator.clipboard.writeText(prompt).catch(() => {});
+  toolPanel.classList.toggle('hidden');
+  toolToast.classList.remove('hidden');
+  setTimeout(() => toolToast.classList.add('hidden'), 3000);
 });
 
-modalCloseBtn.addEventListener('click', () => promptModal.classList.add('hidden'));
-promptModal.addEventListener('click', (e) => { if (e.target === promptModal) promptModal.classList.add('hidden'); });
-
-copyPromptBtn.addEventListener('click', () => {
-  navigator.clipboard.writeText(promptTextEl.textContent).then(() => {
-    copyPromptBtn.textContent = '✓ Copied!';
-    setTimeout(() => { copyPromptBtn.textContent = 'Copy Prompt'; }, 2000);
-  });
+document.getElementById('toolButtons').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tool-btn');
+  if (btn) window.open(btn.dataset.url, '_blank', 'noopener');
 });
