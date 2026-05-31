@@ -23,8 +23,11 @@ projectTypeEl.addEventListener('change', () => {
   if (type) {
     document.getElementById(`fields-${type}`)?.classList.remove('hidden');
     calcBtn.disabled = false;
+    updateVisuals(type);
   } else {
     calcBtn.disabled = true;
+    visualSection.classList.add('hidden');
+    clearInterval(slideInterval);
   }
 });
 
@@ -169,3 +172,199 @@ function showError(msg) {
 function hideError() {
   errorEl.classList.add('hidden');
 }
+
+// ── Visual Build Stages ────────────────────────────────────────────────────
+
+const PROJECT_VISUALS = {
+  deck: {
+    title: 'Wood Deck — Build Stages',
+    stages: [
+      {
+        label: '① Site Prep & Post Holes',
+        img: 'https://source.unsplash.com/900x480/?construction+post+hole+digging+wood',
+        desc: 'Mark the deck layout with stakes and string. Dig post holes at least 12″ below the frost line, then set concrete footings and let cure 24–48 hrs.'
+      },
+      {
+        label: '② Beam & Joist Framing',
+        img: 'https://source.unsplash.com/900x480/?wood+joist+beam+frame+construction+lumber',
+        desc: 'Attach the ledger board to the house, set posts, run the main beam, then hang joists 16″ on center using metal joist hangers.'
+      },
+      {
+        label: '③ Laying Deck Boards',
+        img: 'https://source.unsplash.com/900x480/?deck+boards+installation+wood+fastening',
+        desc: 'Fasten deck boards perpendicular to the joists with 1/8″ spacing for drainage. Work outward from the house, maintain consistent gaps.'
+      },
+      {
+        label: '④ Finished Deck',
+        img: 'https://source.unsplash.com/900x480/?finished+wood+deck+backyard+outdoor',
+        desc: 'Sand cut edges, apply sealant or stain, then install railing if the deck is over 30″ above grade (required by most building codes).'
+      }
+    ]
+  },
+  fence: {
+    title: 'Wood Fence — Build Stages',
+    stages: [
+      {
+        label: '① Layout & Post Hole Spacing',
+        img: 'https://source.unsplash.com/900x480/?fence+post+hole+digging+backyard',
+        desc: 'Mark post spacing (6–8 ft typical) along a string line for alignment. Dig holes 1/3 the post length deep for solid footing.'
+      },
+      {
+        label: '② Setting Posts in Concrete',
+        img: 'https://source.unsplash.com/900x480/?fence+post+concrete+setting+plumb',
+        desc: 'Place posts plumb, pack with fast-setting concrete, brace each post and let cure at least 24 hrs before hanging rails or boards.'
+      },
+      {
+        label: '③ Attaching Rails',
+        img: 'https://source.unsplash.com/900x480/?fence+rail+installation+horizontal+wood',
+        desc: 'Attach top and bottom 2×4 rails to posts. Add a middle rail for fences over 5 ft. Rails can be notched into posts or face-mounted with hardware.'
+      },
+      {
+        label: '④ Finished Fence',
+        img: 'https://source.unsplash.com/900x480/?finished+wood+privacy+fence+backyard',
+        desc: 'Fasten pickets or boards evenly to the rails. Cut tops to a consistent height. Apply exterior stain or paint for weather protection and longevity.'
+      }
+    ]
+  },
+  shedFraming: {
+    title: 'Shed Framing — Build Stages',
+    stages: [
+      {
+        label: '① Floor Frame & Skids',
+        img: 'https://source.unsplash.com/900x480/?shed+floor+frame+pressure+treated+lumber',
+        desc: 'Set pressure-treated 4×6 skids on a level gravel base. Build a floor frame with 2×6 joists 16″ on center, then sheathe with ¾″ plywood.'
+      },
+      {
+        label: '② Wall Framing',
+        img: 'https://source.unsplash.com/900x480/?wall+frame+stud+construction+raising',
+        desc: 'Frame each wall flat on the floor — top plate, bottom plate, studs 16″ OC. Tilt up and temporarily brace each wall section before moving to the next.'
+      },
+      {
+        label: '③ Roof Framing',
+        img: 'https://source.unsplash.com/900x480/?roof+rafter+framing+ridge+board+construction',
+        desc: 'Cut common rafters to match your pitch, install the ridge board at the peak, then add collar ties for lateral strength against wind and snow loads.'
+      },
+      {
+        label: '④ Finished Shed',
+        img: 'https://source.unsplash.com/900x480/?finished+wooden+shed+backyard+garden',
+        desc: 'Sheathe walls and roof with OSB or plywood, add house wrap, install doors and windows, then finish with siding and roofing material of your choice.'
+      }
+    ]
+  }
+};
+
+const visualSection = document.getElementById('visualSection');
+const visualTitleEl = document.getElementById('visualTitle');
+const stageImgEl = document.getElementById('stageImg');
+const stageLabelEl = document.getElementById('stageLabel');
+const stageDescEl = document.getElementById('stageDesc');
+const stageDotsEl = document.getElementById('stageDots');
+const slidePrevBtn = document.getElementById('slidePrev');
+const slideNextBtn = document.getElementById('slideNext');
+const aiPromptBtn = document.getElementById('aiPromptBtn');
+const promptModal = document.getElementById('promptModal');
+const promptTextEl = document.getElementById('promptText');
+const copyPromptBtn = document.getElementById('copyPromptBtn');
+const modalCloseBtn = document.getElementById('modalClose');
+
+let currentStage = 0;
+let slideInterval = null;
+let currentVisualType = null;
+
+function showStage(index) {
+  const visuals = PROJECT_VISUALS[currentVisualType];
+  if (!visuals) return;
+  currentStage = (index + visuals.stages.length) % visuals.stages.length;
+  const stage = visuals.stages[currentStage];
+
+  stageImgEl.style.opacity = '0';
+  setTimeout(() => {
+    stageImgEl.src = stage.img;
+    stageImgEl.alt = stage.label;
+    stageImgEl.style.opacity = '1';
+  }, 180);
+
+  stageLabelEl.textContent = stage.label;
+  stageDescEl.textContent = stage.desc;
+
+  stageDotsEl.querySelectorAll('.dot').forEach((d, i) => {
+    d.classList.toggle('active', i === currentStage);
+  });
+}
+
+function buildDots(count) {
+  stageDotsEl.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.setAttribute('aria-label', `Stage ${i + 1}`);
+    dot.addEventListener('click', () => { showStage(i); resetAutoplay(); });
+    stageDotsEl.appendChild(dot);
+  }
+}
+
+function resetAutoplay() {
+  clearInterval(slideInterval);
+  slideInterval = setInterval(() => showStage(currentStage + 1), 4000);
+}
+
+function updateVisuals(type) {
+  const visuals = PROJECT_VISUALS[type];
+  if (!visuals) return;
+  currentVisualType = type;
+  currentStage = 0;
+  visualTitleEl.textContent = visuals.title;
+  buildDots(visuals.stages.length);
+  showStage(0);
+  visualSection.classList.remove('hidden');
+  resetAutoplay();
+}
+
+slidePrevBtn.addEventListener('click', () => { showStage(currentStage - 1); resetAutoplay(); });
+slideNextBtn.addEventListener('click', () => { showStage(currentStage + 1); resetAutoplay(); });
+
+function buildAiPrompt() {
+  const type = currentVisualType;
+  const visuals = PROJECT_VISUALS[type];
+  if (!visuals) return '';
+
+  const label = PROJECT_LABELS[type] || type;
+  const stages = visuals.stages.map((s) => s.label.replace(/^[①-④]\s*/, '')).join(' → ');
+
+  let dimStr = '';
+  if (type === 'deck') {
+    const l = document.getElementById('deck-length').value;
+    const w = document.getElementById('deck-width').value;
+    if (l && w) dimStr = `${l}ft × ${w}ft `;
+  } else if (type === 'fence') {
+    const l = document.getElementById('fence-length').value;
+    const h = document.getElementById('fence-height').value;
+    if (l && h) dimStr = `${l}ft long × ${h}ft tall `;
+  } else if (type === 'shedFraming') {
+    const l = document.getElementById('shed-length').value;
+    const w = document.getElementById('shed-width').value;
+    if (l && w) dimStr = `${l}ft × ${w}ft `;
+  }
+
+  return `Create a fast-paced construction timelapse video showing a ${dimStr}${label} being built gradually from the first frame (empty backyard/site) to the final frame (fully completed ${label.toLowerCase()}).
+
+The video should look photorealistic and dynamic, with construction workers, hand tools, power tools, and building materials appearing and moving rapidly as if in a timelapse. Show all construction stages in order: ${stages}.
+
+Keep the camera locked in a single wide-angle shot (16–20mm). Movements should be extremely fast and smooth, like a real timelapse recorded over several days but condensed into 10–15 seconds. Maintain consistent daylight, environment, and realism throughout. The final frame should show the finished ${label.toLowerCase()} in a clean, modern backyard setting.`;
+}
+
+aiPromptBtn.addEventListener('click', () => {
+  promptTextEl.textContent = buildAiPrompt();
+  promptModal.classList.remove('hidden');
+  copyPromptBtn.textContent = 'Copy Prompt';
+});
+
+modalCloseBtn.addEventListener('click', () => promptModal.classList.add('hidden'));
+promptModal.addEventListener('click', (e) => { if (e.target === promptModal) promptModal.classList.add('hidden'); });
+
+copyPromptBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(promptTextEl.textContent).then(() => {
+    copyPromptBtn.textContent = '✓ Copied!';
+    setTimeout(() => { copyPromptBtn.textContent = 'Copy Prompt'; }, 2000);
+  });
+});

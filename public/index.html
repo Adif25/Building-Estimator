@@ -179,6 +179,44 @@
     </div>
   </div>
 
+  <!-- Visual Build Stages Section -->
+  <section class="visual-section hidden" id="visualSection">
+    <div class="visual-header">
+      <h3 id="visualTitle">Build Process</h3>
+      <button class="ai-prompt-btn" id="aiPromptBtn">✦ Get AI Animation Prompt</button>
+    </div>
+
+    <div class="stage-slideshow">
+      <button class="slide-arrow slide-prev" id="slidePrev">&#8592;</button>
+      <div class="stage-image-wrap">
+        <img id="stageImg" src="" alt="" />
+        <div class="stage-label-overlay">
+          <span id="stageLabel"></span>
+        </div>
+      </div>
+      <button class="slide-arrow slide-next" id="slideNext">&#8594;</button>
+    </div>
+
+    <p class="stage-desc" id="stageDesc"></p>
+    <div class="stage-dots" id="stageDots"></div>
+  </section>
+
+  <!-- AI Prompt Modal -->
+  <div class="modal-overlay hidden" id="promptModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>AI Animation Prompt</h3>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <p class="modal-sub">Paste into <strong>Google Flow</strong> (Frames to Video) to generate a construction timelapse.</p>
+      <div class="prompt-box" id="promptText"></div>
+      <div class="modal-actions">
+        <button class="copy-btn" id="copyPromptBtn">Copy Prompt</button>
+        <a href="https://flow.google.com" target="_blank" rel="noopener" class="open-flow-btn">Open Google Flow ↗</a>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
