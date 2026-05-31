@@ -321,48 +321,104 @@ function updateVisuals(type) {
 slidePrevBtn.addEventListener('click', () => { showStage(currentStage - 1); resetAutoplay(); });
 slideNextBtn.addEventListener('click', () => { showStage(currentStage + 1); resetAutoplay(); });
 
-const AI_TOOLS = [
-  { name: 'Kling AI', url: 'https://app.klingai.com/text-to-video/new', color: '#7c3aed' },
-  { name: 'Runway', url: 'https://app.runwayml.com/creation/text-to-video', color: '#0ea5e9' },
-  { name: 'Pika', url: 'https://pika.art/create', color: '#f43f5e' },
-  { name: 'Luma AI', url: 'https://lumalabs.ai/dream-machine', color: '#10b981' },
-];
-
 function buildAiPrompt() {
   const type = currentVisualType;
   const visuals = PROJECT_VISUALS[type];
   if (!visuals) return '';
   const label = PROJECT_LABELS[type] || type;
-  const stages = visuals.stages.map((s) => s.label.replace(/^[①-④]\s*/, '')).join(' → ');
+  const stages = visuals.stages.map((s) => s.label.replace(/^[①-④]\s*/, '')).join(', ');
   let dimStr = '';
   if (type === 'deck') {
     const l = document.getElementById('deck-length').value;
     const w = document.getElementById('deck-width').value;
-    if (l && w) dimStr = `${l}ft × ${w}ft `;
+    if (l && w) dimStr = `${l}ft by ${w}ft `;
   } else if (type === 'fence') {
     const l = document.getElementById('fence-length').value;
     const h = document.getElementById('fence-height').value;
-    if (l && h) dimStr = `${l}ft long × ${h}ft tall `;
+    if (l && h) dimStr = `${l}ft long ${h}ft tall `;
   } else if (type === 'shedFraming') {
     const l = document.getElementById('shed-length').value;
     const w = document.getElementById('shed-width').value;
-    if (l && w) dimStr = `${l}ft × ${w}ft `;
+    if (l && w) dimStr = `${l}ft by ${w}ft `;
   }
-  return `Create a fast-paced construction timelapse video showing a ${dimStr}${label} being built gradually from the first frame (empty backyard/site) to the final frame (fully completed ${label.toLowerCase()}). Show construction workers, tools, and materials moving rapidly. Stages in order: ${stages}. Wide-angle locked camera, photorealistic, consistent daylight. Final frame: finished ${label.toLowerCase()} in a clean modern backyard.`;
+  return `Construction timelapse of a ${dimStr}${label} being built from empty land to finished structure. Stages: ${stages}. Photorealistic, wide-angle locked camera, construction workers and materials visible, fast-paced timelapse style, daylight, modern backyard setting.`;
 }
 
-const toolPanel = document.getElementById('toolPanel');
-const toolToast = document.getElementById('toolToast');
+// ── AI Video Generation ────────────────────────────────────────────────────
 
-aiPromptBtn.addEventListener('click', () => {
+const aiVideoPanel  = document.getElementById('aiVideoPanel');
+const aiGenerating  = document.getElementById('aiGenerating');
+const aiStatusText  = document.getElementById('aiStatusText');
+const aiErrorEl     = document.getElementById('aiError');
+const aiVideoEl     = document.getElementById('aiVideo');
+
+let pollTimer = null;
+
+function setAiState(state, msg = '') {
+  aiGenerating.classList.add('hidden');
+  aiErrorEl.classList.add('hidden');
+  aiVideoEl.classList.add('hidden');
+
+  if (state === 'generating') {
+    aiGenerating.classList.remove('hidden');
+    aiStatusText.textContent = msg || 'Generating…';
+    aiVideoPanel.classList.remove('hidden');
+  } else if (state === 'error') {
+    aiErrorEl.textContent = msg;
+    aiErrorEl.classList.remove('hidden');
+    aiVideoPanel.classList.remove('hidden');
+    aiPromptBtn.disabled = false;
+    aiPromptBtn.textContent = '✦ Generate AI Animation';
+  } else if (state === 'done') {
+    aiVideoEl.classList.remove('hidden');
+    aiVideoPanel.classList.remove('hidden');
+    aiPromptBtn.disabled = false;
+    aiPromptBtn.textContent = '↺ Regenerate';
+  }
+}
+
+async function pollStatus(id) {
+  try {
+    const res = await fetch(`/api/animation/status/${id}`);
+    const data = await res.json();
+
+    if (data.status === 'succeeded' && data.videoUrl) {
+      clearInterval(pollTimer);
+      aiVideoEl.src = data.videoUrl;
+      aiVideoEl.load();
+      setAiState('done');
+    } else if (data.status === 'failed' || data.error) {
+      clearInterval(pollTimer);
+      setAiState('error', data.error || 'Generation failed. Try again.');
+    } else {
+      const msgs = { starting: 'Starting up model…', processing: 'Rendering your video…' };
+      aiStatusText.textContent = msgs[data.status] || 'Working…';
+    }
+  } catch (_) {}
+}
+
+aiPromptBtn.addEventListener('click', async () => {
   const prompt = buildAiPrompt();
-  navigator.clipboard.writeText(prompt).catch(() => {});
-  toolPanel.classList.toggle('hidden');
-  toolToast.classList.remove('hidden');
-  setTimeout(() => toolToast.classList.add('hidden'), 3000);
-});
+  aiPromptBtn.disabled = true;
+  aiPromptBtn.textContent = 'Generating…';
+  setAiState('generating', 'Starting up model…');
 
-document.getElementById('toolButtons').addEventListener('click', (e) => {
-  const btn = e.target.closest('.tool-btn');
-  if (btn) window.open(btn.dataset.url, '_blank', 'noopener');
+  try {
+    const res = await fetch('/api/animation/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      setAiState('error', data.error || 'Could not start generation.');
+      return;
+    }
+
+    clearInterval(pollTimer);
+    pollTimer = setInterval(() => pollStatus(data.id), 5000);
+  } catch (_) {
+    setAiState('error', 'Could not reach the server.');
+  }
 });

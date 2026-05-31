@@ -201,19 +201,21 @@
     <div class="stage-dots" id="stageDots"></div>
   </section>
 
-  <!-- AI Tool Panel (inline, no modal) -->
-  <div class="tool-panel hidden" id="toolPanel">
-    <p class="tool-panel-label">Prompt copied — open your AI video tool and paste it:</p>
-    <div class="tool-buttons" id="toolButtons">
-      <button class="tool-btn" data-url="https://app.klingai.com/text-to-video/new" style="--tc:#7c3aed">Kling AI</button>
-      <button class="tool-btn" data-url="https://app.runwayml.com/creation/text-to-video" style="--tc:#0ea5e9">Runway ML</button>
-      <button class="tool-btn" data-url="https://pika.art/create" style="--tc:#f43f5e">Pika</button>
-      <button class="tool-btn" data-url="https://lumalabs.ai/dream-machine" style="--tc:#10b981">Luma AI</button>
+  <!-- AI Video Panel -->
+  <div class="ai-video-panel hidden" id="aiVideoPanel">
+    <!-- Generating state -->
+    <div id="aiGenerating" class="hidden">
+      <div class="ai-spinner"></div>
+      <p class="ai-status-text" id="aiStatusText">Starting generation…</p>
+      <p class="ai-status-sub">This takes 30–90 seconds</p>
     </div>
-  </div>
 
-  <!-- Toast -->
-  <div class="tool-toast hidden" id="toolToast">✓ Prompt copied to clipboard — paste it in the tool!</div>
+    <!-- Error state -->
+    <p class="ai-error hidden" id="aiError"></p>
+
+    <!-- Video result -->
+    <video id="aiVideo" class="ai-video hidden" autoplay loop muted playsinline controls></video>
+  </div>
 
   <script src="app.js"></script>
 </body>
