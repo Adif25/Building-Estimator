@@ -166,6 +166,25 @@
         </div>
 
         <div id="error-msg" class="error-msg hidden"></div>
+
+        <!-- 3D Animation section (shown after estimate) -->
+        <div id="animSection" class="anim-section hidden">
+          <div class="anim-header">
+            <div>
+              <span class="anim-label">3D Build Animation</span>
+              <span class="anim-duration" id="animDuration"></span>
+            </div>
+            <div class="anim-controls">
+              <button class="anim-btn" id="animPlayBtn">▶ Play Animation</button>
+              <button class="anim-btn anim-btn-ghost" id="animReplayBtn">↺ Replay</button>
+            </div>
+          </div>
+          <div id="animCanvas" class="anim-canvas"></div>
+          <div class="anim-phase-bar">
+            <div class="anim-phase-track" id="animPhaseTrack"></div>
+          </div>
+          <p class="anim-phase-label" id="animPhaseLabel">Ready to play</p>
+        </div>
       </section>
     </div>
   </main>
@@ -217,6 +236,8 @@
     <video id="aiVideo" class="ai-video hidden" autoplay loop muted playsinline controls></video>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
+  <script src="animation.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

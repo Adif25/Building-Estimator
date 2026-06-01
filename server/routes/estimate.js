@@ -6,11 +6,7 @@ const calculators = require('../calculators');
 const { lookupPrice } = require('../services/priceLookup');
 
 const VALID_TYPES = ['deck', 'fence', 'shedFraming'];
-const STAGGER_MS = 300;
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+const CONCURRENCY = 4; // max simultaneous price requests
 
 function validateRequest(body) {
   const { projectType, dimensions } = body;
@@ -56,14 +52,15 @@ router.post('/estimate', async (req, res) => {
     }
   }
 
-  // Fetch prices with stagger
-  let i = 0;
-  for (const [query, ] of seenQueries) {
-    if (i > 0) await sleep(STAGGER_MS);
-    const item = materials.find((m) => m.searchQuery === query);
-    const result = await lookupPrice(item.id, query);
-    seenQueries.set(query, result);
-    i++;
+  // Fetch prices in parallel, capped at CONCURRENCY simultaneous requests
+  const uniqueEntries = [...seenQueries.entries()];
+  for (let i = 0; i < uniqueEntries.length; i += CONCURRENCY) {
+    const batch = uniqueEntries.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(async ([query]) => {
+      const item = materials.find((m) => m.searchQuery === query);
+      const result = await lookupPrice(item.id, query);
+      seenQueries.set(query, result);
+    }));
   }
 
   // Attach prices to each material item

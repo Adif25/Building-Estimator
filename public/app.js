@@ -143,6 +143,9 @@ function renderResults(data) {
   errorEl.classList.add('hidden');
   resultsEl.classList.remove('hidden');
   resultsEl.style.justifyContent = '';
+
+  // Show 3D animation section
+  setupAnimationSection(projectType, dimensions);
 }
 
 function fmt(n) {
@@ -172,6 +175,62 @@ function showError(msg) {
 function hideError() {
   errorEl.classList.add('hidden');
 }
+
+// ── 3D Animation Section ──────────────────────────────────────────────────
+
+const animSection   = document.getElementById('animSection');
+const animCanvas    = document.getElementById('animCanvas');
+const animPlayBtn   = document.getElementById('animPlayBtn');
+const animReplayBtn = document.getElementById('animReplayBtn');
+const animDuration  = document.getElementById('animDuration');
+const animPhaseTrack = document.getElementById('animPhaseTrack');
+const animPhaseLabel = document.getElementById('animPhaseLabel');
+
+let _animReady = false;
+
+function setupAnimationSection(projectType, dimensions) {
+  animSection.classList.remove('hidden');
+  _animReady = false;
+  animPlayBtn.disabled = false;
+  animPlayBtn.textContent = '▶ Play Animation';
+  animPhaseLabel.textContent = 'Ready to play';
+  animPhaseTrack.style.width = '0%';
+
+  const info = initConstruction(animCanvas, projectType, dimensions, {
+    onPhase(label, idx, total) {
+      animPhaseLabel.textContent = label;
+      animPhaseTrack.style.width = ((idx + 1) / total * 100) + '%';
+    },
+    onProgress(p) {
+      animPhaseTrack.style.width = (p * 100) + '%';
+    },
+    onComplete() {
+      animPlayBtn.textContent = '✓ Done';
+      animPlayBtn.disabled = true;
+      animPhaseLabel.textContent = 'Build complete — camera orbiting';
+    },
+  });
+
+  const secs = info.totalDuration;
+  animDuration.textContent = `· ${secs}s animation · starts instantly`;
+  _animReady = true;
+}
+
+animPlayBtn.addEventListener('click', () => {
+  if (!_animReady) return;
+  playConstruction();
+  animPlayBtn.disabled = true;
+  animPlayBtn.textContent = '▶ Playing…';
+});
+
+animReplayBtn.addEventListener('click', () => {
+  if (!_animReady) return;
+  replayConstruction();
+  animPlayBtn.disabled = true;
+  animPlayBtn.textContent = '▶ Playing…';
+  animPhaseLabel.textContent = 'Replaying…';
+  animPhaseTrack.style.width = '0%';
+});
 
 // ── Visual Build Stages ────────────────────────────────────────────────────
 
