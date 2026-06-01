@@ -447,6 +447,60 @@ tfoot .num { text-align: right; font-variant-numeric: tabular-nums; }
   transform: scale(1.3);
 }
 
+/* ── Buy buttons ─────────────────────────────────────────────────────────── */
+
+.buy-col { text-align: center; width: 80px; }
+thead th.buy-col { text-align: center; }
+
+.buy-btns {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+
+.buy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 7px;
+  text-decoration: none;
+  transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.buy-btn:hover { opacity: 0.82; transform: translateY(-1px); }
+
+.buy-hd {
+  background: #f96302;
+  color: #fff;
+}
+.buy-bing {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.85rem;
+  padding: 3px 6px;
+}
+.buy-bing:hover { border-color: var(--orange); }
+
+.buy-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--orange);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.buy-all-btn:hover { background: var(--orange-dark); }
+
 /* ── 3D Animation Section ────────────────────────────────────────────────── */
 
 .anim-section {

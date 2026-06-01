@@ -106,6 +106,9 @@ function renderResults(data) {
 
   materialsBody.innerHTML = '';
   for (const item of materials) {
+    const searchQ = encodeURIComponent(`${item.quantity} ${item.unit} ${item.name}`);
+    const bingUrl = `https://www.bing.com/shop/search?q=${searchQ}`;
+    const hdUrl   = `https://www.homedepot.com/s/${encodeURIComponent(item.name)}`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${escHtml(item.name)}</td>
@@ -114,25 +117,42 @@ function renderResults(data) {
       <td class="num">${item.unitPrice !== null ? fmt(item.unitPrice) : '—'}</td>
       <td class="num">${item.totalPrice !== null ? fmt(item.totalPrice) : '—'}</td>
       <td><span class="badge badge-${item.priceSource}">${item.priceSource}</span></td>
+      <td class="buy-col">
+        <div class="buy-btns">
+          <a class="buy-btn buy-hd" href="${hdUrl}" target="_blank" rel="noopener" title="Search Home Depot">HD</a>
+          <a class="buy-btn buy-bing" href="${bingUrl}" target="_blank" rel="noopener" title="Compare prices on Bing Shopping">🛒</a>
+        </div>
+      </td>
     `;
     materialsBody.appendChild(tr);
   }
+
+  // Build "Buy All" Bing Shopping list URL
+  const allQuery = materials.map(m => `${m.quantity} ${m.unit} ${m.name}`).join(', ');
+  const buyAllUrl = `https://www.bing.com/shop/search?q=${encodeURIComponent(materials[0]?.name + ' construction materials')}`;
 
   materialsFoot.innerHTML = `
     <tr class="subtotal-row">
       <td colspan="4">Subtotal</td>
       <td class="num">${fmt(subtotal)}</td>
       <td></td>
+      <td></td>
     </tr>
     <tr class="contingency-row">
       <td colspan="4">Contingency (10%)</td>
       <td class="num">${fmt(contingency)}</td>
       <td></td>
+      <td></td>
     </tr>
     <tr class="total-row">
-      <td colspan="4">Estimated Total</td>
+      <td colspan="3">Estimated Total</td>
       <td class="num">${fmt(total)}</td>
       <td></td>
+      <td class="buy-col">
+        <a class="buy-all-btn" href="https://www.homedepot.com/s/${encodeURIComponent(allQuery.slice(0,80))}" target="_blank" rel="noopener">
+          🛒 Buy All
+        </a>
+      </td>
     </tr>
   `;
 
