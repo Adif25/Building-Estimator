@@ -129,34 +129,26 @@ function renderResults(data) {
     materialsBody.appendChild(tr);
   }
 
-  // Build "Buy All" Bing Shopping list URL
-  const allQuery = materials.map(m => `${m.quantity} ${m.unit} ${m.name}`).join(', ');
-  const buyAllUrl = `https://www.bing.com/shop/search?q=${encodeURIComponent(materials[0]?.name + ' construction materials')}`;
-
   materialsFoot.innerHTML = `
     <tr class="subtotal-row">
-      <td colspan="4">Subtotal</td>
+      <td colspan="5">Subtotal</td>
       <td class="num">${fmt(subtotal)}</td>
-      <td></td>
       <td></td>
     </tr>
     <tr class="contingency-row">
-      <td colspan="4">Contingency (10%)</td>
+      <td colspan="5">Contingency (10%)</td>
       <td class="num">${fmt(contingency)}</td>
-      <td></td>
       <td></td>
     </tr>
     <tr class="total-row">
-      <td colspan="3">Estimated Total</td>
+      <td colspan="5">Estimated Total</td>
       <td class="num">${fmt(total)}</td>
       <td></td>
-      <td class="buy-col">
-        <a class="buy-all-btn" href="https://www.homedepot.com/s/${encodeURIComponent(allQuery.slice(0,80))}" target="_blank" rel="noopener">
-          🛒 Buy All
-        </a>
-      </td>
     </tr>
   `;
+
+  // Shopping list actions
+  renderShoppingActions(data);
 
   placeholderEl.classList.add('hidden');
   errorEl.classList.add('hidden');
@@ -165,6 +157,78 @@ function renderResults(data) {
 
   // Show 3D animation section
   setupAnimationSection(projectType, dimensions);
+}
+
+function renderShoppingActions(data) {
+  const { projectType, dimensions, materials, total } = data;
+  const label = PROJECT_LABELS[projectType] || projectType;
+  const dimParts = [];
+  if (dimensions.length) dimParts.push(`${dimensions.length}ft`);
+  if (dimensions.width)  dimParts.push(`${dimensions.width}ft`);
+  if (dimensions.height) dimParts.push(`${dimensions.height}ft`);
+  const dimStr = dimParts.join(' × ');
+
+  let existing = document.getElementById('shoppingActions');
+  if (existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.id = 'shoppingActions';
+  div.className = 'shopping-actions';
+  div.innerHTML = `
+    <span class="shopping-actions-label">Full materials list:</span>
+    <button class="shop-action-btn" id="copyListBtn">📋 Copy List</button>
+    <button class="shop-action-btn" id="printListBtn">🖨️ Print List</button>
+  `;
+  document.querySelector('.table-wrapper').after(div);
+
+  document.getElementById('copyListBtn').addEventListener('click', () => {
+    const lines = [
+      `${label} — ${dimStr}`,
+      `Estimated Total: $${Number(total).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      '',
+      'MATERIALS LIST',
+      '─'.repeat(40),
+      ...materials.map(m => `• ${m.quantity} ${m.unit.padEnd(12)} ${m.name}`),
+      '─'.repeat(40),
+      '',
+      'Shop at: homedepot.com  |  lowes.com',
+    ];
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      const btn = document.getElementById('copyListBtn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = '📋 Copy List'; }, 2500);
+    });
+  });
+
+  document.getElementById('printListBtn').addEventListener('click', () => {
+    const rows = materials.map(m =>
+      `<tr><td>${m.quantity}</td><td>${escHtml(m.unit)}</td><td>${escHtml(m.name)}</td><td>${m.unitPrice !== null ? '$' + Number(m.unitPrice).toFixed(2) : '—'}</td><td>$${Number(m.totalPrice || 0).toFixed(2)}</td></tr>`
+    ).join('');
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><title>Materials List</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 32px; color: #111; }
+      h1 { font-size: 1.3rem; margin-bottom: 4px; }
+      p { color: #555; font-size: 0.9rem; margin-bottom: 20px; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+      th { text-align: left; border-bottom: 2px solid #333; padding: 8px 12px; }
+      td { padding: 7px 12px; border-bottom: 1px solid #ddd; }
+      .total { font-weight: bold; font-size: 1rem; margin-top: 16px; }
+      .stores { margin-top: 24px; font-size: 0.85rem; color: #444; }
+      @media print { .no-print { display: none; } }
+    </style></head><body>
+    <h1>📋 ${escHtml(label)} — Materials List</h1>
+    <p>${escHtml(dimStr)} &nbsp;|&nbsp; Estimated Total: <strong>$${Number(total).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong></p>
+    <table>
+      <thead><tr><th>Qty</th><th>Unit</th><th>Material</th><th>Unit Price</th><th>Total</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="total">Estimated Total (incl. 10% contingency): $${Number(total).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+    <div class="stores">Shop at: homedepot.com &nbsp;|&nbsp; lowes.com</div>
+    <br><button class="no-print" onclick="window.print()">🖨️ Print</button>
+    </body></html>`);
+    win.document.close();
+  });
 }
 
 function fmt(n) {
