@@ -186,6 +186,72 @@
           </div>
           <p class="anim-phase-label" id="animPhaseLabel">Ready to play</p>
         </div>
+
+        <!-- AI Photo Preview section -->
+        <div id="photoSection" class="photo-section hidden">
+          <div class="photo-section-header">
+            <div>
+              <span class="anim-label">See It In Your Space</span>
+              <span class="anim-duration">· Upload a photo of your yard — paint where the project goes — AI renders it in</span>
+            </div>
+          </div>
+
+          <!-- Step 1: Upload -->
+          <div id="photoStep1" class="photo-step">
+            <label class="upload-area" id="uploadArea">
+              <input type="file" id="photoInput" accept="image/*" hidden />
+              <div class="upload-icon">📷</div>
+              <p class="upload-title">Upload a photo of your yard or space</p>
+              <p class="upload-sub">JPG, PNG — any size</p>
+            </label>
+          </div>
+
+          <!-- Step 2: Draw mask -->
+          <div id="photoStep2" class="hidden">
+            <p class="mask-instructions">
+              <strong>Paint over the area</strong> where the project will go.
+              <span class="mask-instructions-sub">White brush = where AI builds. Use Undo if needed.</span>
+            </p>
+            <div class="mask-toolbar">
+              <label class="toolbar-label">Brush size</label>
+              <input type="range" id="brushSize" min="10" max="80" value="30" class="brush-slider" />
+              <span id="brushSizeVal">30px</span>
+              <button class="mask-tool-btn" id="undoBtn">↩ Undo</button>
+              <button class="mask-tool-btn" id="clearMaskBtn">✕ Clear</button>
+            </div>
+            <div class="canvas-wrap" id="canvasWrap">
+              <canvas id="photoCanvas"></canvas>
+              <canvas id="maskCanvas"></canvas>
+            </div>
+            <button class="render-btn" id="renderBtn">✨ Generate AI Preview</button>
+          </div>
+
+          <!-- Step 3: Result -->
+          <div id="photoStep3" class="hidden">
+            <div id="renderLoading" class="render-loading hidden">
+              <div class="ai-spinner"></div>
+              <p class="ai-status-text" id="renderStatusText">Sending to AI…</p>
+              <p class="ai-status-sub">Takes 20–40 seconds</p>
+            </div>
+            <div id="renderError" class="ai-error hidden"></div>
+            <div id="renderResult" class="hidden">
+              <div class="render-compare">
+                <div class="render-img-wrap">
+                  <p class="render-img-label">Before</p>
+                  <img id="beforeImg" alt="Original" />
+                </div>
+                <div class="render-img-wrap">
+                  <p class="render-img-label">AI Preview</p>
+                  <img id="afterImg" alt="AI render" />
+                </div>
+              </div>
+              <div class="render-actions">
+                <button class="mask-tool-btn" id="retryBtn">↩ Try Again</button>
+                <a id="downloadBtn" class="render-btn" download="ai-preview.png">⬇ Download</a>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   </main>

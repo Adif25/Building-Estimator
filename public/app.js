@@ -157,6 +157,9 @@ function renderResults(data) {
 
   // Show 3D animation section
   setupAnimationSection(projectType, dimensions);
+
+  // Show AI photo preview section
+  showPhotoSection(projectType);
 }
 
 function renderShoppingActions(data) {
@@ -313,5 +316,203 @@ animReplayBtn.addEventListener('click', () => {
   animPlayBtn.textContent = '▶ Playing…';
   animPhaseLabel.textContent = 'Replaying…';
   animPhaseTrack.style.width = '0%';
+});
+
+// ── AI Photo Preview (mask drawing + Replicate inpainting) ─────────────────
+
+const photoSection  = document.getElementById('photoSection');
+const photoInput    = document.getElementById('photoInput');
+const uploadArea    = document.getElementById('uploadArea');
+const photoStep1    = document.getElementById('photoStep1');
+const photoStep2    = document.getElementById('photoStep2');
+const photoStep3    = document.getElementById('photoStep3');
+const photoCanvas   = document.getElementById('photoCanvas');
+const maskCanvas    = document.getElementById('maskCanvas');
+const brushSizeEl   = document.getElementById('brushSize');
+const brushSizeVal  = document.getElementById('brushSizeVal');
+const renderBtn     = document.getElementById('renderBtn');
+const retryBtn      = document.getElementById('retryBtn');
+const undoBtn       = document.getElementById('undoBtn');
+const clearMaskBtn  = document.getElementById('clearMaskBtn');
+const renderLoading = document.getElementById('renderLoading');
+const renderError   = document.getElementById('renderError');
+const renderResult  = document.getElementById('renderResult');
+const renderStatus  = document.getElementById('renderStatusText');
+const beforeImg     = document.getElementById('beforeImg');
+const afterImg      = document.getElementById('afterImg');
+const downloadBtn   = document.getElementById('downloadBtn');
+
+let photoCtx, maskCtx;
+let drawing = false;
+let undoStack = [];
+let _renderProjectType = null;
+let _renderPollTimer   = null;
+
+function showPhotoSection(projectType) {
+  _renderProjectType = projectType;
+  photoSection.classList.remove('hidden');
+}
+
+// Show photo section after estimate renders
+const _origSetupAnim = setupAnimationSection;
+
+// Drag-and-drop support
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('upload-drag'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('upload-drag'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.classList.remove('upload-drag');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadPhoto(file);
+});
+
+photoInput.addEventListener('change', () => {
+  if (photoInput.files[0]) loadPhoto(photoInput.files[0]);
+});
+
+function loadPhoto(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      // Size canvas to fit panel width (max 800px)
+      const maxW = document.getElementById('canvasWrap').clientWidth || 800;
+      const scale = Math.min(1, maxW / img.width);
+      const W = Math.round(img.width  * scale);
+      const H = Math.round(img.height * scale);
+
+      photoCanvas.width  = maskCanvas.width  = W;
+      photoCanvas.height = maskCanvas.height = H;
+
+      photoCtx = photoCanvas.getContext('2d');
+      maskCtx  = maskCanvas.getContext('2d');
+
+      photoCtx.drawImage(img, 0, 0, W, H);
+
+      // Black background on mask = keep everything by default
+      maskCtx.fillStyle = '#000';
+      maskCtx.fillRect(0, 0, W, H);
+
+      undoStack = [];
+      beforeImg.src = photoCanvas.toDataURL('image/jpeg', 0.92);
+
+      photoStep1.classList.add('hidden');
+      photoStep2.classList.remove('hidden');
+      photoStep3.classList.add('hidden');
+      renderResult.classList.add('hidden');
+      renderError.classList.add('hidden');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Mask drawing
+function getMaskPos(e) {
+  const rect = maskCanvas.getBoundingClientRect();
+  const scaleX = maskCanvas.width  / rect.width;
+  const scaleY = maskCanvas.height / rect.height;
+  const src = e.touches ? e.touches[0] : e;
+  return {
+    x: (src.clientX - rect.left)  * scaleX,
+    y: (src.clientY - rect.top)   * scaleY,
+  };
+}
+
+function paintBrush(e) {
+  if (!drawing || !maskCtx) return;
+  const { x, y } = getMaskPos(e);
+  const size = parseInt(brushSizeEl.value);
+  maskCtx.beginPath();
+  maskCtx.arc(x, y, size / 2, 0, Math.PI * 2);
+  maskCtx.fillStyle = 'rgba(255,255,255,0.85)';
+  maskCtx.fill();
+}
+
+maskCanvas.addEventListener('mousedown',  (e) => { saveUndo(); drawing = true; paintBrush(e); });
+maskCanvas.addEventListener('mousemove',  paintBrush);
+maskCanvas.addEventListener('mouseup',    () => { drawing = false; });
+maskCanvas.addEventListener('mouseleave', () => { drawing = false; });
+maskCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); saveUndo(); drawing = true; paintBrush(e); }, { passive: false });
+maskCanvas.addEventListener('touchmove',  (e) => { e.preventDefault(); paintBrush(e); }, { passive: false });
+maskCanvas.addEventListener('touchend',   () => { drawing = false; });
+
+brushSizeEl.addEventListener('input', () => { brushSizeVal.textContent = brushSizeEl.value + 'px'; });
+
+function saveUndo() {
+  if (!maskCtx) return;
+  undoStack.push(maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height));
+  if (undoStack.length > 20) undoStack.shift();
+}
+
+undoBtn.addEventListener('click', () => {
+  if (undoStack.length === 0) return;
+  maskCtx.putImageData(undoStack.pop(), 0, 0);
+});
+
+clearMaskBtn.addEventListener('click', () => {
+  saveUndo();
+  maskCtx.fillStyle = '#000';
+  maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+});
+
+// Generate
+renderBtn.addEventListener('click', async () => {
+  const imageDataUrl = photoCanvas.toDataURL('image/png');
+  const maskDataUrl  = maskCanvas.toDataURL('image/png');
+
+  photoStep2.classList.add('hidden');
+  photoStep3.classList.remove('hidden');
+  renderLoading.classList.remove('hidden');
+  renderResult.classList.add('hidden');
+  renderError.classList.add('hidden');
+
+  try {
+    const res  = await fetch('/api/render/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: imageDataUrl, mask: maskDataUrl, projectType: _renderProjectType }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) { showRenderError(data.error || 'Failed to start.'); return; }
+
+    clearInterval(_renderPollTimer);
+    _renderPollTimer = setInterval(() => pollRender(data.id), 4000);
+  } catch (_) {
+    showRenderError('Could not reach the server.');
+  }
+});
+
+async function pollRender(id) {
+  try {
+    const res  = await fetch(`/api/render/status/${id}`);
+    const data = await res.json();
+    if (data.status === 'succeeded' && data.imageUrl) {
+      clearInterval(_renderPollTimer);
+      renderLoading.classList.add('hidden');
+      afterImg.src       = data.imageUrl;
+      downloadBtn.href   = data.imageUrl;
+      renderResult.classList.remove('hidden');
+    } else if (data.status === 'failed' || data.error) {
+      clearInterval(_renderPollTimer);
+      showRenderError(data.error || 'Generation failed.');
+    } else {
+      const msgs = { starting: 'Starting AI model…', processing: 'Rendering your space…' };
+      renderStatus.textContent = msgs[data.status] || 'Working…';
+    }
+  } catch (_) {}
+}
+
+function showRenderError(msg) {
+  renderLoading.classList.add('hidden');
+  renderError.textContent = msg;
+  renderError.classList.remove('hidden');
+}
+
+retryBtn.addEventListener('click', () => {
+  photoStep3.classList.add('hidden');
+  photoStep2.classList.remove('hidden');
+  renderResult.classList.add('hidden');
+  renderError.classList.add('hidden');
 });
 
