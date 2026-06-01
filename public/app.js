@@ -106,9 +106,10 @@ function renderResults(data) {
 
   materialsBody.innerHTML = '';
   for (const item of materials) {
-    const searchQ = encodeURIComponent(`${item.quantity} ${item.unit} ${item.name}`);
-    const bingUrl = `https://www.bing.com/shop/search?q=${searchQ}`;
-    const hdUrl   = `https://www.homedepot.com/s/${encodeURIComponent(item.name)}`;
+    const q = encodeURIComponent(`${item.name} ${item.unit}`);
+    const hdUrl    = `https://www.homedepot.com/s/${q}`;
+    const lowesUrl = `https://www.lowes.com/search?searchTerm=${q}`;
+    const bingUrl  = `https://www.bing.com/shop/search?q=${encodeURIComponent(item.name + ' ' + item.unit + ' lumber')}`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${escHtml(item.name)}</td>
@@ -119,8 +120,9 @@ function renderResults(data) {
       <td><span class="badge badge-${item.priceSource}">${item.priceSource}</span></td>
       <td class="buy-col">
         <div class="buy-btns">
-          <a class="buy-btn buy-hd" href="${hdUrl}" target="_blank" rel="noopener" title="Search Home Depot">HD</a>
-          <a class="buy-btn buy-bing" href="${bingUrl}" target="_blank" rel="noopener" title="Compare prices on Bing Shopping">🛒</a>
+          <a class="buy-btn buy-hd"    href="${hdUrl}"    target="_blank" rel="noopener" title="Search Home Depot">HD</a>
+          <a class="buy-btn buy-lowes" href="${lowesUrl}" target="_blank" rel="noopener" title="Search Lowe's">LW</a>
+          <a class="buy-btn buy-bing"  href="${bingUrl}"  target="_blank" rel="noopener" title="Compare prices on Bing Shopping">🛒</a>
         </div>
       </td>
     `;

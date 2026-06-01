@@ -476,6 +476,10 @@ thead th.buy-col { text-align: center; }
   background: #f96302;
   color: #fff;
 }
+.buy-lowes {
+  background: #004990;
+  color: #fff;
+}
 .buy-bing {
   background: rgba(255,255,255,0.08);
   border: 1px solid var(--border);
