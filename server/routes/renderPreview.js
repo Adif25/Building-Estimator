@@ -91,6 +91,7 @@ router.post('/start', async (req, res) => {
 
 // GET /api/render/status/:id  → { status, imageUrl }
 router.get('/status/:id', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   try {
     const prediction = await replicateGet(`/v1/predictions/${req.params.id}`);
     const output = prediction.output;

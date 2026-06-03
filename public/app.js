@@ -511,7 +511,7 @@ async function pollRender(id) {
   }
   const elapsed = Math.floor((Date.now() - _renderPollStart) / 1000);
   try {
-    const res  = await fetch(`/api/render/status/${id}`);
+    const res  = await fetch(`/api/render/status/${id}?t=${Date.now()}`);
     const data = await res.json();
     if (data.status === 'succeeded' && data.imageUrl) {
       clearInterval(_renderPollTimer);
