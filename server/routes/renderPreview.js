@@ -72,13 +72,12 @@ router.post('/start', async (req, res) => {
   const negativePrompt = 'unrealistic, cartoon, painting, sketch, blurry, low quality, distorted';
 
   try {
-    // Use stability-ai/stable-diffusion-inpainting via Replicate
-    const prediction = await replicatePost('/v1/models/stability-ai/stable-diffusion-inpainting/predictions', {
+    const prediction = await replicatePost('/v1/models/lucataco/sdxl-inpainting/predictions', {
       input: {
         prompt,
         negative_prompt: negativePrompt,
-        image,   // base64 data URI
-        mask,    // base64 data URI (white = inpaint, black = keep)
+        image,
+        mask,
         num_inference_steps: 25,
         guidance_scale: 7.5,
         strength: 0.99,
