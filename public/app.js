@@ -456,7 +456,7 @@ clearMaskBtn.addEventListener('click', () => {
   maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
 });
 
-// Resize a canvas to max dimension, return JPEG data URL (keeps under Vercel 4.5MB limit)
+// Resize canvas to max 512px (SD's native res), return JPEG — keeps well under Vercel's 4.5MB hard limit
 function compressCanvas(srcCanvas, maxPx, quality) {
   const scale = Math.min(1, maxPx / Math.max(srcCanvas.width, srcCanvas.height));
   const w = Math.round(srcCanvas.width  * scale);
@@ -469,9 +469,9 @@ function compressCanvas(srcCanvas, maxPx, quality) {
 
 // Generate
 renderBtn.addEventListener('click', async () => {
-  // Compress both to max 768px wide/tall, JPEG to stay well under Vercel's 4.5MB body limit
-  const imageDataUrl = compressCanvas(photoCanvas, 768, 0.88);
-  const maskDataUrl  = compressCanvas(maskCanvas,  768, 0.90);
+  // 512px = Stable Diffusion's native resolution + keeps base64 payload ~150KB each
+  const imageDataUrl = compressCanvas(photoCanvas, 512, 0.80);
+  const maskDataUrl  = compressCanvas(maskCanvas,  512, 0.80);
 
   photoStep2.classList.add('hidden');
   photoStep3.classList.remove('hidden');
