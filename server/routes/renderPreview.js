@@ -74,18 +74,15 @@ router.post('/start', async (req, res) => {
   }
 
   const prompt = PROJECT_PROMPTS[projectType] || PROJECT_PROMPTS.deck;
-  const negativePrompt = 'unrealistic, cartoon, painting, sketch, blurry, low quality, distorted';
 
   try {
-    const prediction = await replicatePost('/v1/models/lucataco/sdxl-inpainting/predictions', {
+    const prediction = await replicatePost('/v1/models/black-forest-labs/flux-fill-dev/predictions', {
       input: {
         prompt,
-        negative_prompt: negativePrompt,
         image,
         mask,
-        num_inference_steps: 25,
-        guidance_scale: 7.5,
-        strength: 0.99,
+        steps: 28,
+        guidance: 28,
       },
     });
     res.json({ id: prediction.id });
