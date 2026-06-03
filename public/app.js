@@ -456,16 +456,29 @@ clearMaskBtn.addEventListener('click', () => {
   maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
 });
 
+// Resize a canvas to max dimension, return JPEG data URL (keeps under Vercel 4.5MB limit)
+function compressCanvas(srcCanvas, maxPx, quality) {
+  const scale = Math.min(1, maxPx / Math.max(srcCanvas.width, srcCanvas.height));
+  const w = Math.round(srcCanvas.width  * scale);
+  const h = Math.round(srcCanvas.height * scale);
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(srcCanvas, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', quality);
+}
+
 // Generate
 renderBtn.addEventListener('click', async () => {
-  const imageDataUrl = photoCanvas.toDataURL('image/png');
-  const maskDataUrl  = maskCanvas.toDataURL('image/png');
+  // Compress both to max 768px wide/tall, JPEG to stay well under Vercel's 4.5MB body limit
+  const imageDataUrl = compressCanvas(photoCanvas, 768, 0.88);
+  const maskDataUrl  = compressCanvas(maskCanvas,  768, 0.90);
 
   photoStep2.classList.add('hidden');
   photoStep3.classList.remove('hidden');
   renderLoading.classList.remove('hidden');
   renderResult.classList.add('hidden');
   renderError.classList.add('hidden');
+  renderStatus.textContent = 'Sending to AI…';
 
   try {
     const res  = await fetch('/api/render/start', {
@@ -473,13 +486,17 @@ renderBtn.addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image: imageDataUrl, mask: maskDataUrl, projectType: _renderProjectType }),
     });
-    const data = await res.json();
-    if (!res.ok || data.error) { showRenderError(data.error || 'Failed to start.'); return; }
+
+    let data;
+    try { data = await res.json(); }
+    catch (_) { showRenderError(`Server error (HTTP ${res.status}) — check Vercel function logs.`); return; }
+
+    if (!res.ok || data.error) { showRenderError(data.error || `HTTP ${res.status}`); return; }
 
     clearInterval(_renderPollTimer);
     _renderPollTimer = setInterval(() => pollRender(data.id), 4000);
-  } catch (_) {
-    showRenderError('Could not reach the server.');
+  } catch (err) {
+    showRenderError(`Network error: ${err.message}`);
   }
 });
 
