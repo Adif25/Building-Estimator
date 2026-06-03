@@ -469,11 +469,21 @@ function compressCanvas(srcCanvas, maxPx, quality) {
   return c.toDataURL('image/jpeg', quality);
 }
 
+function compressCanvasPng(srcCanvas, maxPx) {
+  const scale = Math.min(1, maxPx / Math.max(srcCanvas.width, srcCanvas.height));
+  const w = Math.round(srcCanvas.width  * scale);
+  const h = Math.round(srcCanvas.height * scale);
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(srcCanvas, 0, 0, w, h);
+  return c.toDataURL('image/png');
+}
+
 // Generate
 renderBtn.addEventListener('click', async () => {
-  // 512px = Stable Diffusion's native resolution + keeps base64 payload ~150KB each
   const imageDataUrl = compressCanvas(photoCanvas, 512, 0.80);
-  const maskDataUrl  = compressCanvas(maskCanvas,  512, 0.80);
+  // Mask must be PNG (lossless) — JPEG compression turns pure black into grey noise
+  const maskDataUrl  = compressCanvasPng(maskCanvas, 512);
 
   photoStep2.classList.add('hidden');
   photoStep3.classList.remove('hidden');
