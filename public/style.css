@@ -602,6 +602,35 @@ thead th.buy-col { text-align: center; }
   top: 0; left: 0;
   opacity: 0.45;
 }
+#overlayCanvas {
+  position: absolute;
+  top: 0; left: 0;
+  pointer-events: none;
+}
+
+/* Mode toggle bar */
+.mask-mode-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.mask-mode-btn {
+  background: var(--charcoal);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.83rem;
+  font-weight: 600;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.mask-mode-btn:hover { border-color: var(--orange); color: var(--orange); }
+.mask-mode-btn.active {
+  background: rgba(232,119,34,0.12);
+  border-color: var(--orange);
+  color: var(--orange);
+}
 
 .render-btn {
   display: inline-flex;

@@ -192,7 +192,7 @@
           <div class="photo-section-header">
             <div>
               <span class="anim-label">See It In Your Space</span>
-              <span class="anim-duration">· Upload a photo of your yard — paint where the project goes — AI renders it in</span>
+              <span class="anim-duration">· Upload a photo of your yard — AI adds the project automatically</span>
             </div>
           </div>
 
@@ -206,23 +206,49 @@
             </label>
           </div>
 
-          <!-- Step 2: Draw mask -->
+          <!-- Step 2: Auto or Manual -->
           <div id="photoStep2" class="hidden">
-            <p class="mask-instructions">
-              <strong>Paint over the area</strong> where the project will go.
-              <span class="mask-instructions-sub">White brush = where AI builds. Use Undo if needed.</span>
-            </p>
-            <div class="mask-toolbar">
-              <label class="toolbar-label">Brush size</label>
-              <input type="range" id="brushSize" min="10" max="80" value="30" class="brush-slider" />
-              <span id="brushSizeVal">30px</span>
-              <button class="mask-tool-btn" id="undoBtn">↩ Undo</button>
-              <button class="mask-tool-btn" id="clearMaskBtn">✕ Clear</button>
+            <!-- Mode toggle -->
+            <div class="mask-mode-bar">
+              <button class="mask-mode-btn active" id="modeAutoBtn">✦ Auto Place</button>
+              <button class="mask-mode-btn" id="modeManualBtn">✏ Draw Manually</button>
             </div>
+
+            <!-- Auto mode controls -->
+            <div id="autoModePanel">
+              <p class="mask-instructions">
+                AI will place the project in the <strong>ground area</strong> of your photo.
+                <span class="mask-instructions-sub">Adjust coverage if the highlighted area looks off.</span>
+              </p>
+              <div class="mask-toolbar">
+                <label class="toolbar-label">Ground coverage</label>
+                <input type="range" id="autoMaskCoverage" min="15" max="65" value="38" class="brush-slider" />
+                <span id="autoMaskVal">38%</span>
+              </div>
+            </div>
+
+            <!-- Manual mode controls -->
+            <div id="manualModePanel" class="hidden">
+              <p class="mask-instructions">
+                <strong>Paint over the area</strong> where the project will go.
+                <span class="mask-instructions-sub">White brush = where AI builds.</span>
+              </p>
+              <div class="mask-toolbar">
+                <label class="toolbar-label">Brush size</label>
+                <input type="range" id="brushSize" min="10" max="80" value="30" class="brush-slider" />
+                <span id="brushSizeVal">30px</span>
+                <button class="mask-tool-btn" id="undoBtn">↩ Undo</button>
+                <button class="mask-tool-btn" id="clearMaskBtn">✕ Clear</button>
+              </div>
+            </div>
+
+            <!-- Shared canvas (shown in both modes) -->
             <div class="canvas-wrap" id="canvasWrap">
               <canvas id="photoCanvas"></canvas>
               <canvas id="maskCanvas"></canvas>
+              <canvas id="overlayCanvas"></canvas>
             </div>
+
             <button class="render-btn" id="renderBtn">✨ Generate AI Preview</button>
           </div>
 

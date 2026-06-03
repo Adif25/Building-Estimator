@@ -320,45 +320,121 @@ animReplayBtn.addEventListener('click', () => {
 
 // ── AI Photo Preview (mask drawing + Replicate inpainting) ─────────────────
 
-const photoSection  = document.getElementById('photoSection');
-const photoInput    = document.getElementById('photoInput');
-const uploadArea    = document.getElementById('uploadArea');
-const photoStep1    = document.getElementById('photoStep1');
-const photoStep2    = document.getElementById('photoStep2');
-const photoStep3    = document.getElementById('photoStep3');
-const photoCanvas   = document.getElementById('photoCanvas');
-const maskCanvas    = document.getElementById('maskCanvas');
-const brushSizeEl   = document.getElementById('brushSize');
-const brushSizeVal  = document.getElementById('brushSizeVal');
-const renderBtn     = document.getElementById('renderBtn');
-const retryBtn      = document.getElementById('retryBtn');
-const undoBtn       = document.getElementById('undoBtn');
-const clearMaskBtn  = document.getElementById('clearMaskBtn');
-const renderLoading = document.getElementById('renderLoading');
-const renderError   = document.getElementById('renderError');
-const renderResult  = document.getElementById('renderResult');
-const renderStatus  = document.getElementById('renderStatusText');
-const beforeImg     = document.getElementById('beforeImg');
-const afterImg      = document.getElementById('afterImg');
-const downloadBtn   = document.getElementById('downloadBtn');
+const photoSection    = document.getElementById('photoSection');
+const photoInput      = document.getElementById('photoInput');
+const uploadArea      = document.getElementById('uploadArea');
+const photoStep1      = document.getElementById('photoStep1');
+const photoStep2      = document.getElementById('photoStep2');
+const photoStep3      = document.getElementById('photoStep3');
+const photoCanvas     = document.getElementById('photoCanvas');
+const maskCanvas      = document.getElementById('maskCanvas');
+const overlayCanvas   = document.getElementById('overlayCanvas');
+const modeAutoBtn     = document.getElementById('modeAutoBtn');
+const modeManualBtn   = document.getElementById('modeManualBtn');
+const autoModePanel   = document.getElementById('autoModePanel');
+const manualModePanel = document.getElementById('manualModePanel');
+const autoMaskCovEl   = document.getElementById('autoMaskCoverage');
+const autoMaskValEl   = document.getElementById('autoMaskVal');
+const brushSizeEl     = document.getElementById('brushSize');
+const brushSizeVal    = document.getElementById('brushSizeVal');
+const renderBtn       = document.getElementById('renderBtn');
+const retryBtn        = document.getElementById('retryBtn');
+const undoBtn         = document.getElementById('undoBtn');
+const clearMaskBtn    = document.getElementById('clearMaskBtn');
+const renderLoading   = document.getElementById('renderLoading');
+const renderError     = document.getElementById('renderError');
+const renderResult    = document.getElementById('renderResult');
+const renderStatus    = document.getElementById('renderStatusText');
+const beforeImg       = document.getElementById('beforeImg');
+const afterImg        = document.getElementById('afterImg');
+const downloadBtn     = document.getElementById('downloadBtn');
 
-let photoCtx, maskCtx;
+let photoCtx, maskCtx, overlayCtx;
 let drawing = false;
 let undoStack = [];
+let _isAutoMode = true;
 let _renderProjectType = null;
 let _renderPollTimer   = null;
 let _renderPollStart   = null;
-const RENDER_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const RENDER_TIMEOUT_MS = 5 * 60 * 1000;
 
 function showPhotoSection(projectType) {
   _renderProjectType = projectType;
   photoSection.classList.remove('hidden');
 }
 
-// Show photo section after estimate renders
-const _origSetupAnim = setupAnimationSection;
+// ── Auto-mask helpers ────────────────────────────────────────────────────
 
-// Drag-and-drop support
+function applyAutoMask() {
+  if (!maskCtx || !overlayCtx) return;
+  const W = maskCanvas.width;
+  const H = maskCanvas.height;
+  const pct = parseInt(autoMaskCovEl.value) / 100;
+  const cutY = Math.round(H * (1 - pct));
+
+  // Write hard-white mask in bottom portion, black above
+  maskCtx.fillStyle = '#000';
+  maskCtx.fillRect(0, 0, W, H);
+  maskCtx.fillStyle = '#fff';
+  maskCtx.fillRect(0, cutY, W, H - cutY);
+
+  // Soft feather at boundary so the transition blends
+  const grad = maskCtx.createLinearGradient(0, cutY - 24, 0, cutY + 8);
+  grad.addColorStop(0, 'rgba(0,0,0,1)');
+  grad.addColorStop(1, 'rgba(255,255,255,1)');
+  maskCtx.fillStyle = grad;
+  maskCtx.fillRect(0, cutY - 24, W, 32);
+
+  // Draw overlay preview: blue tint + dashed line
+  overlayCtx.clearRect(0, 0, W, H);
+  overlayCtx.fillStyle = 'rgba(99,179,237,0.28)';
+  overlayCtx.fillRect(0, cutY, W, H - cutY);
+  overlayCtx.strokeStyle = 'rgba(99,179,237,0.9)';
+  overlayCtx.setLineDash([10, 5]);
+  overlayCtx.lineWidth = 2;
+  overlayCtx.beginPath();
+  overlayCtx.moveTo(0, cutY);
+  overlayCtx.lineTo(W, cutY);
+  overlayCtx.stroke();
+  overlayCtx.setLineDash([]);
+}
+
+autoMaskCovEl.addEventListener('input', () => {
+  autoMaskValEl.textContent = autoMaskCovEl.value + '%';
+  applyAutoMask();
+});
+
+// ── Mode switching ───────────────────────────────────────────────────────
+
+modeAutoBtn.addEventListener('click', () => {
+  _isAutoMode = true;
+  modeAutoBtn.classList.add('active');
+  modeManualBtn.classList.remove('active');
+  autoModePanel.classList.remove('hidden');
+  manualModePanel.classList.add('hidden');
+  overlayCanvas.style.pointerEvents = 'none';
+  maskCanvas.style.cursor = 'default';
+  applyAutoMask();
+});
+
+modeManualBtn.addEventListener('click', () => {
+  _isAutoMode = false;
+  modeManualBtn.classList.add('active');
+  modeAutoBtn.classList.remove('active');
+  manualModePanel.classList.remove('hidden');
+  autoModePanel.classList.add('hidden');
+  // Clear overlay, reset mask to black for manual painting
+  if (overlayCtx) overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  if (maskCtx) {
+    maskCtx.fillStyle = '#000';
+    maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+    undoStack = [];
+  }
+  maskCanvas.style.cursor = 'crosshair';
+});
+
+// ── Photo loading ────────────────────────────────────────────────────────
+
 uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('upload-drag'); });
 uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('upload-drag'));
 uploadArea.addEventListener('drop', e => {
@@ -377,26 +453,34 @@ function loadPhoto(file) {
   reader.onload = (e) => {
     const img = new Image();
     img.onload = () => {
-      // Size canvas to fit panel width (max 800px)
       const maxW = document.getElementById('canvasWrap').clientWidth || 800;
       const scale = Math.min(1, maxW / img.width);
       const W = Math.round(img.width  * scale);
       const H = Math.round(img.height * scale);
 
-      photoCanvas.width  = maskCanvas.width  = W;
-      photoCanvas.height = maskCanvas.height = H;
+      photoCanvas.width  = maskCanvas.width  = overlayCanvas.width  = W;
+      photoCanvas.height = maskCanvas.height = overlayCanvas.height = H;
 
-      photoCtx = photoCanvas.getContext('2d');
-      maskCtx  = maskCanvas.getContext('2d');
+      photoCtx   = photoCanvas.getContext('2d');
+      maskCtx    = maskCanvas.getContext('2d');
+      overlayCtx = overlayCanvas.getContext('2d');
 
       photoCtx.drawImage(img, 0, 0, W, H);
-
-      // Black background on mask = keep everything by default
       maskCtx.fillStyle = '#000';
       maskCtx.fillRect(0, 0, W, H);
 
       undoStack = [];
       beforeImg.src = photoCanvas.toDataURL('image/jpeg', 0.92);
+
+      // Default to auto mode
+      _isAutoMode = true;
+      modeAutoBtn.classList.add('active');
+      modeManualBtn.classList.remove('active');
+      autoModePanel.classList.remove('hidden');
+      manualModePanel.classList.add('hidden');
+      overlayCanvas.style.pointerEvents = 'none';
+      maskCanvas.style.cursor = 'default';
+      applyAutoMask();
 
       photoStep1.classList.add('hidden');
       photoStep2.classList.remove('hidden');
@@ -409,20 +493,18 @@ function loadPhoto(file) {
   reader.readAsDataURL(file);
 }
 
-// Mask drawing
+// ── Manual brush drawing ─────────────────────────────────────────────────
+
 function getMaskPos(e) {
   const rect = maskCanvas.getBoundingClientRect();
   const scaleX = maskCanvas.width  / rect.width;
   const scaleY = maskCanvas.height / rect.height;
   const src = e.touches ? e.touches[0] : e;
-  return {
-    x: (src.clientX - rect.left)  * scaleX,
-    y: (src.clientY - rect.top)   * scaleY,
-  };
+  return { x: (src.clientX - rect.left) * scaleX, y: (src.clientY - rect.top) * scaleY };
 }
 
 function paintBrush(e) {
-  if (!drawing || !maskCtx) return;
+  if (!drawing || !maskCtx || _isAutoMode) return;
   const { x, y } = getMaskPos(e);
   const size = parseInt(brushSizeEl.value);
   maskCtx.beginPath();
@@ -431,12 +513,12 @@ function paintBrush(e) {
   maskCtx.fill();
 }
 
-maskCanvas.addEventListener('mousedown',  (e) => { saveUndo(); drawing = true; paintBrush(e); });
+maskCanvas.addEventListener('mousedown',  (e) => { if (!_isAutoMode) { saveUndo(); drawing = true; paintBrush(e); } });
 maskCanvas.addEventListener('mousemove',  paintBrush);
 maskCanvas.addEventListener('mouseup',    () => { drawing = false; });
 maskCanvas.addEventListener('mouseleave', () => { drawing = false; });
-maskCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); saveUndo(); drawing = true; paintBrush(e); }, { passive: false });
-maskCanvas.addEventListener('touchmove',  (e) => { e.preventDefault(); paintBrush(e); }, { passive: false });
+maskCanvas.addEventListener('touchstart', (e) => { if (!_isAutoMode) { e.preventDefault(); saveUndo(); drawing = true; paintBrush(e); } }, { passive: false });
+maskCanvas.addEventListener('touchmove',  (e) => { if (!_isAutoMode) { e.preventDefault(); paintBrush(e); } }, { passive: false });
 maskCanvas.addEventListener('touchend',   () => { drawing = false; });
 
 brushSizeEl.addEventListener('input', () => { brushSizeVal.textContent = brushSizeEl.value + 'px'; });
