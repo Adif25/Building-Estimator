@@ -347,6 +347,8 @@ let drawing = false;
 let undoStack = [];
 let _renderProjectType = null;
 let _renderPollTimer   = null;
+let _renderPollStart   = null;
+const RENDER_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 function showPhotoSection(projectType) {
   _renderProjectType = projectType;
@@ -494,6 +496,7 @@ renderBtn.addEventListener('click', async () => {
     if (!res.ok || data.error) { showRenderError(data.error || `HTTP ${res.status}`); return; }
 
     clearInterval(_renderPollTimer);
+    _renderPollStart = Date.now();
     _renderPollTimer = setInterval(() => pollRender(data.id), 4000);
   } catch (err) {
     showRenderError(`Network error: ${err.message}`);
@@ -501,6 +504,12 @@ renderBtn.addEventListener('click', async () => {
 });
 
 async function pollRender(id) {
+  if (Date.now() - _renderPollStart > RENDER_TIMEOUT_MS) {
+    clearInterval(_renderPollTimer);
+    showRenderError('Timed out after 5 minutes. Replicate may be overloaded — try again in a moment.');
+    return;
+  }
+  const elapsed = Math.floor((Date.now() - _renderPollStart) / 1000);
   try {
     const res  = await fetch(`/api/render/status/${id}`);
     const data = await res.json();
@@ -514,10 +523,15 @@ async function pollRender(id) {
       clearInterval(_renderPollTimer);
       showRenderError(data.error || 'Generation failed.');
     } else {
-      const msgs = { starting: 'Starting AI model…', processing: 'Rendering your space…' };
-      renderStatus.textContent = msgs[data.status] || 'Working…';
+      const msgs = {
+        starting:   `Starting AI model… (${elapsed}s)`,
+        processing: `Rendering your space… (${elapsed}s)`,
+      };
+      renderStatus.textContent = msgs[data.status] || `Working… (${elapsed}s)`;
     }
-  } catch (_) {}
+  } catch (err) {
+    renderStatus.textContent = `Waiting for response… (${elapsed}s)`;
+  }
 }
 
 function showRenderError(msg) {
