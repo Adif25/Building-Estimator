@@ -28,8 +28,13 @@ function replicatePost(path, body) {
       const chunks = [];
       res.on('data', c => chunks.push(c));
       res.on('end', () => {
-        try { resolve(JSON.parse(Buffer.concat(chunks).toString())); }
-        catch (e) { reject(new Error('Bad JSON from Replicate')); }
+        try {
+          const parsed = JSON.parse(Buffer.concat(chunks).toString());
+          if (res.statusCode >= 400) {
+            return reject(new Error(`Replicate error ${res.statusCode}: ${parsed.detail || JSON.stringify(parsed)}`));
+          }
+          resolve(parsed);
+        } catch (e) { reject(new Error('Bad JSON from Replicate')); }
       });
       res.on('error', reject);
     });
