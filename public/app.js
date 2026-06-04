@@ -159,7 +159,7 @@ function renderResults(data) {
   setupAnimationSection(projectType, dimensions);
 
   // Show AI photo preview section
-  showPhotoSection(projectType);
+  showPhotoSection(projectType, dimensions);
 }
 
 function renderShoppingActions(data) {
@@ -354,12 +354,24 @@ let drawing = false;
 let undoStack = [];
 let _isAutoMode = true;
 let _renderProjectType = null;
+let _renderDimensions  = null;
+let _renderStyle       = 'suburban';
 let _renderPollTimer   = null;
 let _renderPollStart   = null;
 const RENDER_TIMEOUT_MS = 5 * 60 * 1000;
 
-function showPhotoSection(projectType) {
+// Style card selection
+document.querySelectorAll('.style-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.style-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    _renderStyle = card.dataset.style;
+  });
+});
+
+function showPhotoSection(projectType, dimensions) {
   _renderProjectType = projectType;
+  _renderDimensions  = dimensions || null;
   photoSection.classList.remove('hidden');
 }
 
@@ -578,7 +590,7 @@ renderBtn.addEventListener('click', async () => {
     const res  = await fetch('/api/render/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: imageDataUrl, mask: maskDataUrl, projectType: _renderProjectType }),
+      body: JSON.stringify({ image: imageDataUrl, mask: maskDataUrl, projectType: _renderProjectType, style: _renderStyle, dimensions: _renderDimensions }),
     });
 
     let data;

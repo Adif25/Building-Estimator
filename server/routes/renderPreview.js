@@ -4,11 +4,38 @@ const express = require('express');
 const https   = require('https');
 const router  = express.Router();
 
-const PROJECT_PROMPTS = {
-  deck:        'a beautiful new pressure-treated wood deck with railings, photorealistic, natural wood grain, sunny day',
-  fence:       'a brand new wooden privacy fence, photorealistic, natural wood, clean straight posts and boards',
-  shedFraming: 'a new wooden storage shed, photorealistic, clean wood siding, shingled roof, sunny backyard',
+// Style descriptors keyed by [projectType][style]
+const STYLE_PROMPTS = {
+  deck: {
+    suburban: 'a classic pressure-treated wood deck with white painted railings and wooden steps, attached to the house, photorealistic backyard renovation, natural daylight',
+    modern:   'a sleek modern composite Trex deck with matte black steel cable railings and frameless glass panels, clean geometric lines attached to house, contemporary backyard, photorealistic',
+    luxury:   'a premium Ipe hardwood deck with built-in LED step lighting, glass railings, outdoor dining set, attached cedar pergola with string lights, luxurious backyard renovation, photorealistic',
+    farmhouse:'a rustic cedar deck with barn-style X-pattern railings and wide wooden steps, farmhouse country backyard aesthetic, natural wood stain, photorealistic renovation',
+  },
+  fence: {
+    suburban: 'a classic cedar wood privacy fence with cap rails, standard suburban backyard, clean new construction, photorealistic',
+    modern:   'a modern horizontal-slat fence in dark gray composite boards, contemporary clean design, photorealistic backyard',
+    luxury:   'an elegant wrought iron fence with brick pillars and ornate caps, upscale estate property, photorealistic renovation',
+    farmhouse:'a rustic whitewashed wood picket fence with a simple gate, farmhouse cottage backyard, photorealistic',
+  },
+  shedFraming: {
+    suburban: 'a classic vinyl-sided storage shed with shutters and double doors, suburban backyard, new construction, photorealistic',
+    modern:   'a modern shed studio with flat roof, floor-to-ceiling windows, dark steel and cedar cladding, contemporary design, photorealistic',
+    luxury:   'a premium cedar garden studio with cupola, large windows, French doors and window boxes, luxury property, photorealistic renovation',
+    farmhouse:'a rustic barn-style shed with gambrel roof, weathered grey cedar board-and-batten siding, farmhouse aesthetic, photorealistic',
+  },
 };
+
+function buildPrompt(projectType, style, dimensions) {
+  const styleMap = STYLE_PROMPTS[projectType] || STYLE_PROMPTS.deck;
+  const base = styleMap[style] || styleMap.suburban;
+  const dimParts = [];
+  if (dimensions?.length) dimParts.push(`${dimensions.length} feet long`);
+  if (dimensions?.width)  dimParts.push(`${dimensions.width} feet wide`);
+  if (dimensions?.height) dimParts.push(`${dimensions.height} feet tall`);
+  const dimStr = dimParts.length ? `, approximately ${dimParts.join(' by ')}` : '';
+  return `${base}${dimStr}, high quality architectural rendering, realistic lighting`;
+}
 
 function replicatePost(path, body) {
   return new Promise((resolve, reject) => {
@@ -66,14 +93,14 @@ function replicateGet(path) {
   });
 }
 
-// POST /api/render/start  { image, mask, projectType }  → { id }
+// POST /api/render/start  { image, mask, projectType, style?, dimensions? }  → { id }
 router.post('/start', async (req, res) => {
-  const { image, mask, projectType } = req.body;
+  const { image, mask, projectType, style, dimensions } = req.body;
   if (!image || !mask || !projectType) {
     return res.status(400).json({ error: 'Missing image, mask, or projectType' });
   }
 
-  const prompt = PROJECT_PROMPTS[projectType] || PROJECT_PROMPTS.deck;
+  const prompt = buildPrompt(projectType, style || 'suburban', dimensions);
 
   try {
     const prediction = await replicatePost('/v1/models/black-forest-labs/flux-fill-dev/predictions', {
