@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* Brand theme — matches the Build Estimator app (dark charcoal + orange). */
+@theme {
+  --color-charcoal: #1e2328;
+  --color-charcoal-light: #2b3038;
+  --color-panel: #252b32;
+  --color-row-alt: #1e2328;
+  --color-ink: #f0f0f0;
+  --color-muted: #9aa0a8;
+  --color-edge: #363c44;
+  --color-brand: #e87722;
+  --color-brand-dark: #c4611a;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+#root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--color-charcoal);
+  color: var(--color-ink);
+}
